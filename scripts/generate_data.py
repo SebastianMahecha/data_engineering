@@ -47,7 +47,9 @@ class GenerateData:
             'trx_region': trx_regions, 
             'category_product': category_products  
         })
-
+        
+        return
     def csv_export(self):
         self.data.to_csv(self.data_csv_path, index=False)
+        return
 

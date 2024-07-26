@@ -19,6 +19,7 @@ class Runner:
 
     def run(self):
         logging.basicConfig(format='%(levelname)s:  %(message)s', level=logging.INFO)
+        
         if self.type_exc == "all":
            self.generate()
            self.load()
@@ -31,7 +32,8 @@ class Runner:
             self.read()
         else:
             print("Type Error")
-
+        
+        return 
     def generate(self):
         generator = GenerateData(
             trx_count=self.trx_count,
@@ -39,6 +41,7 @@ class Runner:
         )
         generator.run()
         generator.csv_export()
+        return 
 
     def load(self):
         loader = LoadData(
@@ -51,13 +54,15 @@ class Runner:
         )
         loader.csvToParquet()
         loader.loadParquetsToGCP()
-
+        return
+    
     def read(self):
         reader = ReadData(
             bucket_id = self.bucket_id,
             gcp_secrets = self.gcp_secrets
         )
         reader.get_files_from_gcp()
+        return
     
 if __name__ == "__main__":
 
@@ -65,12 +70,15 @@ if __name__ == "__main__":
     parser.add_argument('--type', type=str, required=True, help='Tipo de ejecucion: all, generate, load, read')
     parser.add_argument('--count', type=str, required=False, help='Cantidad de registros a generar, no obligatorio')
     args = parser.parse_args()
+    
     type_exc = "all"
     if args.type is not None:
         type_exc = args.type
+    
     trx_count = 0
     if args.count is not None and args.count.isnumeric():
         trx_count = int(args.count)
+    
     main = Runner(
         type_exc = type_exc,
         trx_count = trx_count,

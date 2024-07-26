@@ -31,9 +31,11 @@ class LoadData:
         client = storage.Client.from_service_account_json(self.gcp_secrets)
         bucket = client.get_bucket(self.bucket_id)
         files = [f for f in os.listdir(self.parquet_split_folder) if os.path.isfile(os.path.join(self.parquet_split_folder, f))]
+        
         for file in files:
             blob = bucket.blob(file)
             blob.upload_from_filename(self.parquet_split_folder+file)
+        
         return
 
 

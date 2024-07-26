@@ -17,8 +17,7 @@ class ReadData:
         logging.info("LENYENDO ARCHIVOS...")
         client = storage.Client.from_service_account_json(self.gcp_secrets)
         files = client.list_blobs(self.bucket_id, prefix='')
-        i = 0
-
+       
         new_rows = {
             'trx_id': [100000001, 100000002, 100000003],
             'customer_id':[8888, 9999, 7777],
