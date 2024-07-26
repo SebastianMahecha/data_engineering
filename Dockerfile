@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copia el script Python al contenedor
 COPY . /app/
-
+COPY .env /app/.env
 COPY requirements.txt .
 
 # Instala las dependencias del proyecto

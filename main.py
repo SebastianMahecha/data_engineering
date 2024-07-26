@@ -1,3 +1,4 @@
+import os
 import logging
 import argparse
 from scripts.generate_data import GenerateData
@@ -64,15 +65,21 @@ if __name__ == "__main__":
     parser.add_argument('--type', type=str, required=True, help='Tipo de ejecucion: all, generate, load, read')
     parser.add_argument('--count', type=str, required=False, help='Cantidad de registros a generar, no obligatorio')
     args = parser.parse_args()
+    type_exc = "all"
+    if args.type is not None:
+        type_exc = args.type
+    trx_count = 0
+    if args.count is not None and args.count.isnumeric():
+        trx_count = int(args.count)
     main = Runner(
-        type_exc = args.type,
-        trx_count = int(args.count),
-        data_csv_path = 'data/data.csv',
-        parquet_path = 'data/data.parquet',
-        parquet_split_folder = 'data/parquets/',
-        parquet_split_path = 'data/parquets/data_{0}.parquet',
-        bucket_id = 'data_engineering_bucket',
-        gcp_secrets = 'config/client_secret.json'
+        type_exc = type_exc,
+        trx_count = trx_count,
+        data_csv_path = os.getenv('DATA_CSV_PATH'),
+        parquet_path = os.getenv('PARQUET_PATH'),
+        parquet_split_folder = os.getenv('PARQUET_SPLIT_FOLDER'),
+        parquet_split_path = os.getenv('PARQUET_SPLIT_PATH'),
+        bucket_id = os.getenv('BUCKET_ID'),
+        gcp_secrets = os.getenv('GCP_SECRETS')
     )
 
     main.run()
