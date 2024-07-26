@@ -1,15 +1,18 @@
-import pandas as pd
-import random
 import csv
+import random
+import logging
 import datetime
+import pandas as pd
 from datetime import datetime, timedelta
 
 class GenerateData:
 
-    def __init__(self, trx_count):
+    def __init__(self, trx_count = 0, data_csv_path=''):
         self.trx_count = trx_count
+        self.data_csv_path = data_csv_path
 
     def run(self):
+        logging.info("GENERANDO DATA...")
         # Read the CSV file and extract categories
         with open('data/category_products.csv', mode='r', newline='', encoding='utf-8') as file:
             reader = csv.DictReader(file)
@@ -45,9 +48,6 @@ class GenerateData:
             'category_product': category_products  
         })
 
-    def csv_export(self, path):
-        self.data.to_csv(path, index=False)
+    def csv_export(self):
+        self.data.to_csv(self.data_csv_path, index=False)
 
-generator = GenerateData(10000000)
-generator.run()
-generator.csv_export("data/data.csv")

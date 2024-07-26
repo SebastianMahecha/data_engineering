@@ -1,4 +1,5 @@
 import time
+import logging
 import tempfile
 import pandas as pd
 import polars as pl
@@ -13,7 +14,7 @@ class ReadData:
         self.gcp_secrets = gcp_secrets
 
     def get_files_from_gcp(self):
-        
+        logging.info("LENYENDO ARCHIVOS...")
         client = storage.Client.from_service_account_json(self.gcp_secrets)
         files = client.list_blobs(self.bucket_id, prefix='')
         i = 0
@@ -47,15 +48,17 @@ class ReadData:
             'modin':  duration_operation_modin
         }
         
-        print("Escalafon de carga")
+        logging.info("-------------------------")
+        logging.info("Escalafon de carga")
         
         for i, lib in enumerate(sorted(durations_load.items(), key=lambda x:x[1])):
-            print(i+1, lib[0], lib[1])
+            logging.info("{0}: {1} - {2} ".format(i+1, lib[0], lib[1]))
         
-        print("Escalafon de operacion")
+        logging.info("-------------------------")
+        logging.info("Escalafon de operacion")
         
         for i, lib in enumerate(sorted(durations_operation.items(), key=lambda x:x[1])):
-            print(i+1, lib[0], lib[1])
+            logging.info("{0}: {1} - {2} ".format(i+1, lib[0], lib[1]))
         
         return
     
@@ -72,18 +75,23 @@ class ReadData:
         #Adding new records
         df_new  = pd.DataFrame(new_rows)
         df = df._append(df_new, ignore_index = True)
-
-        print("PANDAS")
-        print("Suma Total por Categoria")
-        print(df.groupby([df['category_product']]).agg({'trx_amount': 'sum'}).sort_values(('trx_amount'),ascending=False))
-        print("Promedio por Region")
-        print(df.groupby([df['trx_region']]).agg({'trx_amount': 'mean'}).sort_values(('trx_amount'),ascending=False))
-        print("Suma Total Ventas: ",df['trx_amount'].sum())
-        print("Promedio Total Ventas: ",df['trx_amount'].mean())
-
+        df_categories = df.groupby([df['category_product']]).agg({'trx_amount': 'sum'}).sort_values(('trx_amount'),ascending=False)
+        df_regions = df.groupby([df['trx_region']]).agg({'trx_amount': 'mean'}).sort_values(('trx_amount'),ascending=False)
+        sum = df['trx_amount'].sum()
+        mean = df['trx_amount'].mean()
         time_end_operation =  time.time()
+        
+        logging.info("-------------------------")
+        logging.info("PANDAS")
+        logging.info("Suma Total por Categoria - Pandas")
+        logging.info(df_categories.to_string())
+        logging.info("Promedio por Region - Pandas")
+        logging.info(df_regions.to_string())
+        logging.info("Suma Total Ventas - Pandas: {0}".format(sum))
+        logging.info("Promedio Total Ventas - Pandas: {0}".format(mean))
+
+        
         duration_operation = time_end_operation-time_start_operation
-        print("Duracion operaciones Pandas: ", duration_operation)
 
         return duration_load, duration_operation
     
@@ -101,19 +109,24 @@ class ReadData:
         #Adding new records
         df_new  = pl.DataFrame(new_rows)
         df = pl.concat([df, df_new])   
-        
-        print("POLARS")
-        print("Suma Total por Categoria")
-        print(df['category_product', 'trx_amount'].group_by('category_product', maintain_order=True).sum().set_sorted('trx_amount', descending=True))
-        print("Promedio por Region")
-        print(df['trx_region', 'trx_amount'].group_by('trx_region', maintain_order=True).sum().set_sorted('trx_amount', descending=True))
-        print("Suma Total Ventas: ",df['trx_amount'].sum())
-        print("Promedio Total Ventas: ",df['trx_amount'].mean())
-
+        df_categories = df['category_product', 'trx_amount'].group_by('category_product', maintain_order=True).sum().sort('trx_amount', descending=True)
+        df_regions = df['trx_region', 'trx_amount'].group_by('trx_region', maintain_order=True).mean().sort('trx_amount', descending=True)
+        sum = df['trx_amount'].sum()
+        mean = df['trx_amount'].mean()
         time_end_operation =  time.time()
-        duration_operation = time_end_operation-time_start_operation
-        print("Duracion Operaciones Polars: ", duration_operation)
+        
+        logging.info("-------------------------")
+        logging.info("POLARS")
+        logging.info("Suma Total por Categoria - Polars")
+        logging.info(df_categories.to_pandas().to_string())
+        logging.info("Promedio por Region - Polars")
+        logging.info(df_regions.to_pandas().to_string())
+        logging.info("Suma Total Ventas - Polars: {0}".format(sum))
+        logging.info("Promedio Total Ventas - Polars: {0}".format(mean))
 
+        
+        duration_operation = time_end_operation-time_start_operation
+    
         return duration_load, duration_operation
     
     def operation_with_modin(self, parquets, new_rows):
@@ -133,24 +146,24 @@ class ReadData:
         #Adding new records
         df_new  = mpd.DataFrame(new_rows)
         df = mpd.concat([df, df_new])
-        
-        
-        print("MODIN")
-        print("Suma Total por Categoria")
-        print(df.groupby([df['category_product']]).agg({'trx_amount': 'sum'}).sort_values(('trx_amount'),ascending=False))
-        print("Promedio por Region")
-        print(df.groupby([df['trx_region']]).agg({'trx_amount': 'mean'}).sort_values(('trx_amount'),ascending=False))
-        print("Suma Total Ventas: ",df['trx_amount'].sum())
-        print("Promedio Total Ventas: ",df['trx_amount'].mean())
-
+        df_categories = df.groupby([df['category_product']]).agg({'trx_amount': 'sum'}).sort_values(('trx_amount'),ascending=False)
+        df_regions = df.groupby([df['trx_region']]).agg({'trx_amount': 'mean'}).sort_values(('trx_amount'),ascending=False)
+        sum = df['trx_amount'].sum()
+        mean = df['trx_amount'].mean()
         time_end_operation =  time.time()
+        
+        logging.info("-------------------------")
+        logging.info("MODIN")
+        logging.info("Suma Total por Categoria - Modin")
+        logging.info(df_categories._to_pandas().to_string())
+        logging.info("Promedio por Region - Modin")
+        logging.info(df_regions._to_pandas().to_string())
+        logging.info("Suma Total Ventas - Modin: {0}".format(sum))
+        logging.info("Promedio Total Ventas- Modin: {0}".format(mean))
+
+        
         duration_operation = time_end_operation-time_start_operation
-        print("Duracion Operaciones Modin: ", duration_operation)
 
         return duration_load, duration_operation
     
-reader = ReadData(
-    bucket_id = 'data_engineering_bucket',
-    gcp_secrets = 'client_secret.json'
-)
-reader.get_files_from_gcp()
+
